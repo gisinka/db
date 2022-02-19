@@ -41,7 +41,7 @@ namespace Tests
         [Test]
         public void CanSerializeNotStartedGameWithPlayers()
         {
-            var players = new List<Player> { new Player(Guid.NewGuid(), "name") };
+            var players = new List<Player> { new(Guid.NewGuid(), "name") };
             var entity = new GameEntity(Guid.NewGuid(), GameStatus.WaitingToStart, 10, 2, players);
             AssertCorrectSerialization(entity);
         }

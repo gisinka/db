@@ -8,12 +8,15 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
-        private readonly Random random = new Random();
+        private readonly IGameTurnRepository turnRepo;
+        private readonly Random random = new();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = MongoDatabase.Create();
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+            turnRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -126,7 +129,7 @@ namespace ConsoleApp
             if (game.HaveDecisionOfEveryPlayer)
             {
                 // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                turnRepo.Insert(game.FinishTurn());
             }
 
             ShowScore(game);
@@ -180,8 +183,18 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
+            var turns = turnRepo.GetLastTurns(game.Id, 5);
             // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+
+            foreach (var turn in turns)
+            {
+                foreach (var (playerId, playerDecision) in turn.Decisions)
+                {
+                    Console.WriteLine($"{players.SingleOrDefault(x => x.UserId == playerId)?.Name} - {playerDecision}");
+                }
+                Console.WriteLine();
+            }
         }
     }
 }
